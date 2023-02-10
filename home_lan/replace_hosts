@@ -1,0 +1,52 @@
+#!/bin/zsh
+
+declare -A args
+
+while [ $# -gt 0 ]; do
+    if [[ "$1" =~ ^--[a-zA-Z]+ ]]; then
+        key="${1#--}"
+        value="$2"
+        args[$key]=$value
+        shift 2
+    else
+        shift
+    fi
+done
+
+echo "args: "
+# shellcheck disable=SC2066
+for key in "${(@k)args}"; do
+    echo "$key=${args[$key]}"
+done
+# 片段来源
+hosts_file_url=${args[file_url]:-https://raw.githubusercontent.com/shelken/MyScript/main/snippet/hosts_snippet}
+# 替换文件地址
+hosts_path=${args[hosts_path]:-/etc/hosts}
+# host片段的标识
+snippet_flag=${args[snippet_flag]:-zerotier-lan}
+# 动作命令 replace替换，remove移除
+action=${args[snippet_flag]:replace}
+
+
+start_flag="# ${snippet_flag} start"
+end_flag="# ${snippet_flag} end"
+
+# 以上为变量赋值区域，
+# 形如：default_test=${args[e]:-default_value}』
+# e: 为外部传入参数，如果没有将给「default_value」
+
+
+# 代码区域
+
+# 从网络获取片段
+snippet=$(curl -s $hosts_file_url)
+
+if [ "$action" == "replace" ]; then
+  # 替换操作：找到以 start_flag 开头和 end_flag 结尾的行，将这两行之间的内容替换为 snippet
+  sed -i "/$start_flag/,/$end_flag/{s/.*/$snippet/}" $hosts_path
+else
+  # 移除操作：找到以 start_flag 开头和 end_flag 结尾的行，将这两行之间的内容删除
+  sed -i "/$start_flag/,/$end_flag/d" $hosts_path
+fi
+
+

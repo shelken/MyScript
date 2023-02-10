@@ -1,0 +1,39 @@
+#!/bin/zsh
+
+declare -A args
+
+while [ $# -gt 0 ]; do
+    if [[ "$1" =~ ^--[a-zA-Z]+ ]]; then
+        key="${1#--}"
+        value="$2"
+        args[$key]=$value
+        shift 2
+    else
+        shift
+    fi
+done
+
+#echo "${args[nn]}"
+
+#default_test=${args[nn]:-default_value}
+#echo $default_test
+
+echo "args: "
+# shellcheck disable=SC2066
+for key in "${(@k)args}"; do
+    echo "$key=${args[$key]}"
+done
+
+# 以上为变量赋值区域，
+# 形如：default_test=${args[e]:-default_value}』
+# e: 为外部传入参数，如果没有将给「default_value」
+
+#
+#
+#
+#
+#
+#
+#
+#
+

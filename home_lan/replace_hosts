@@ -19,11 +19,11 @@ for key in "${!args[@]}"; do
 done
 
 # 片段来源
-hosts_file_url=${args[file - url]:-https://raw.githubusercontent.com/shelken/MyScript/main/home_lan/hosts_snippet}
+hosts_file_url=${args[file-url]:-https://raw.githubusercontent.com/shelken/MyScript/main/home_lan/hosts_snippet}
 # 替换文件地址
-hosts_path=${args[hosts - path]:-/etc/hosts}
+hosts_path=${args[hosts-path]:-/etc/hosts}
 # host片段的标识
-snippet_flag=${args[snippet - flag]:-zerotier-lan}
+snippet_flag=${args[snippet-flag]:-zerotier-lan}
 # 动作命令 replace替换，remove移除
 action=${args[action]:-replace}
 #

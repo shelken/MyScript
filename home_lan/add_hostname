@@ -1,0 +1,111 @@
+#!/bin/bash
+
+declare -A args
+
+while [ $# -gt 0 ]; do
+  if [[ "$1" =~ ^--[a-zA-Z]+ ]]; then
+    key="${1#--}"
+    value="$2"
+    args[$key]=$value
+    shift 2
+  else
+    shift
+  fi
+done
+
+echo "args: "
+for key in "${!args[@]}"; do
+  echo "$key=${args[$key]}"
+done
+
+# 片段来源
+hosts_file_url=${args[file-url]:-https://raw.githubusercontent.com/shelken/MyScript/main/home_lan/hosts_snippet}
+# 替换文件地址
+file_path=${args[file-path]:-./temp}
+# host片段的标识
+snippet_flag=${args[snippet-flag]:-zerotier-lan}
+# 动作命令 add替换，remove移除
+action=${args[action]:-add}
+remove_names=${args[remove_names]}
+#
+proxy=${args[proxy]}
+
+start_flag="# ${snippet_flag} start"
+end_flag="# ${snippet_flag} end"
+
+#echo $hosts_file_url
+#echo $hosts_path
+#echo $snippet_flag
+#echo $action
+
+# 以上为变量赋值区域，
+# 形如：default_test=${args[e]:-default_value}』
+# e: 为外部传入参数，如果没有将给「default_value」
+
+# 代码区域
+
+#!/bin/bash
+
+# 读取原始数据
+raw_data=$(curl -L -s $hosts_file_url)
+
+# 构建 map
+declare -A map
+while read -r line; do
+  ip=$(echo "$line" | awk '{print $1}')
+  name=$(echo "$line" | awk '{print $2}')
+  map[$name]=$ip
+done <<< "$raw_data"
+
+# 读取 /etc/config/dhcp 数据
+dhcp_config=$(cat "$file_path")
+
+function add_to_dhcp {
+  key=$1
+  value=$2
+  # Check if the key already exists in the DHCP config
+  if ! grep -q "option name '$key'" <<< "$dhcp_config"; then
+    # If the key does not exist, add it
+    dhcp_config="$dhcp_config
+config domain
+        option name '$key'
+        option ip '$value'"
+  fi
+}
+
+function add_action {
+  # 循环 map，判断是否存在，如果不存在则添加
+  for key in "${!map[@]}"; do
+    value=${map[$key]}
+    if [[ $dhcp_config =~ $key ]]; then
+      # 如果已存在，跳过
+      continue
+    else
+      add_to_dhcp "$key" "$value"
+    fi
+  done
+}
+
+function remove_action {
+    IFS="," read -a remove_names <<< "$remove_names"
+    for remove_name in "${remove_names[@]}"; do
+        start_line=`grep -n "option name '$remove_name'" "$file_path" | cut -d : -f 1`
+        if [ ! -z $start_line ]; then
+          end_line=$(($start_line + 1))
+          sed -i "$(($start_line - 1)),${end_line}d" "$file_path"
+        fi
+      done
+      exit 0
+
+}
+
+if [[ "$action" == "remove" ]]; then
+  remove_action
+else
+  add_action
+fi
+
+
+# 写入 /etc/config/dhcp
+echo "$dhcp_config" > "$file_path"
+

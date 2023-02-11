@@ -1,34 +1,33 @@
-#!/bin/zsh
+#!/bin/bash
 
 declare -A args
 
 while [ $# -gt 0 ]; do
-    if [[ "$1" =~ ^--[a-zA-Z]+ ]]; then
-        key="${1#--}"
-        value="$2"
-        args[$key]=$value
-        shift 2
-    else
-        shift
-    fi
+  if [[ "$1" =~ ^--[a-zA-Z]+ ]]; then
+    key="${1#--}"
+    value="$2"
+    args[$key]=$value
+    shift 2
+  else
+    shift
+  fi
 done
 
 echo "args: "
-# shellcheck disable=SC2066
-for key in "${(@k)args}"; do
-    echo "$key=${args[$key]}"
+for key in "${!args[@]}"; do
+  echo "$key=${args[$key]}"
 done
+
 # 片段来源
-hosts_file_url=${args[file-url]:-https://raw.githubusercontent.com/shelken/MyScript/main/home_lan/hosts_snippet}
+hosts_file_url=${args[file - url]:-https://raw.githubusercontent.com/shelken/MyScript/main/home_lan/hosts_snippet}
 # 替换文件地址
-hosts_path=${args[hosts-path]:-/etc/hosts}
+hosts_path=${args[hosts - path]:-/etc/hosts}
 # host片段的标识
-snippet_flag=${args[snippet-flag]:-zerotier-lan}
+snippet_flag=${args[snippet - flag]:-zerotier-lan}
 # 动作命令 replace替换，remove移除
 action=${args[action]:-replace}
 #
 proxy=${args[proxy]}
-
 
 start_flag="# ${snippet_flag} start"
 end_flag="# ${snippet_flag} end"
@@ -38,11 +37,9 @@ end_flag="# ${snippet_flag} end"
 #echo $snippet_flag
 #echo $action
 
-
 # 以上为变量赋值区域，
 # 形如：default_test=${args[e]:-default_value}』
 # e: 为外部传入参数，如果没有将给「default_value」
-
 
 # 代码区域
 
@@ -50,21 +47,24 @@ end_flag="# ${snippet_flag} end"
 if [[ "$action" == "replace" ]]; then
   # 从远程主机获取hosts文件片段
   # 获取片段
-  if [[ ! $proxy  ]]; then
-    hosts_snippet=$(curl -s --proxy "$proxy" "$hosts_file_url")
+  if [[ ! $proxy ]]; then
+    #    curl -L -o ./temp -s --proxy "$proxy" "$hosts_file_url"
+    hosts_snippet=$(curl -L -s --proxy "$proxy" "$hosts_file_url")
   else
-    hosts_snippet=$(curl -s "$hosts_file_url")
+    #    curl -L -o ./temp -s "$hosts_file_url"
+    hosts_snippet=$(curl -L -s "$hosts_file_url")
   fi
-  echo "$hosts_snippet"
-  if grep -q "$start_flag" "$hosts_path"; then
-    # 在hosts文件中找到以start_flag开头的行和以end_flag结尾的行，替换这两行中的片段
-    sed -i "/$start_flag/,/$end_flag/c\
-    $start_flag\n$hosts_snippet\n$end_flag" "$hosts_path"
-  else
-    # 没有找到，在末尾添加
-#    echo -e "\n$start_flag\n$hosts_snippet\n$end_flag" >> "$hosts_path"
-    printf '\n%s\n%s\n%s\n' "$start_flag" "$hosts_snippet" "$end_flag" >> "$hosts_path"
-  fi
+#  if grep -q "$start_flag" "$hosts_path"; then
+#    # 在hosts文件中找到以start_flag开头的行和以end_flag结尾的行，替换这两行中的片段
+#    #      sed -i "/$start_flag/,/$end_flag/a\ $start_flag\n$escaped_hosts_snippet\n$end_flag" "$hosts_path"
+#    sed -i "/$start_flag/,/$end_flag/d" "$hosts_path"
+#  else
+#    # 没有找到，在末尾添加
+#    printf '\n%s\n%s\n%s\n' "$start_flag" "$hosts_snippet" "$end_flag" >>"$hosts_path"
+#  fi
+  sed -i "/$start_flag/,/$end_flag/d" "$hosts_path"
+  printf '\n%s\n%s\n%s\n' "$start_flag" "$hosts_snippet" "$end_flag" >>"$hosts_path"
+
 # 移除操作
 elif [[ "$action" == "remove" ]]; then
   # 删除以start_flag开头的行和以end_flag结尾的行以及两行中的片段
@@ -73,4 +73,3 @@ else
   echo "未知的动作命令：$action"
   exit 1
 fi
-

@@ -1,32 +1,35 @@
-#!/bin/zsh
+#!/bin/bash
 
-declare -A args
+help() {
+  echo "  支持参数
+  {{}}
+  "
+}
 
-while [ $# -gt 0 ]; do
-    if [[ "$1" =~ ^--[a-zA-Z]+ ]]; then
-        key="${1#--}"
-        value="$2"
-        args[$key]=$value
-        shift 2
-    else
-        shift
-    fi
+while [[ $# -gt 0 ]]; do
+  key="$1"
+
+  case $key in
+  -v | --version)
+    VERSION="$2"
+    shift 2
+    ;;
+  -h | --help)
+    help
+    exit 1
+    ;;
+  *)
+    echo "Unknown option $1"
+    exit 1
+    ;;
+  esac
 done
 
-#echo "${args[nn]}"
+if [ -z "$VERSION" ]; then
+  VERSION=1
+fi
 
-#default_test=${args[nn]:-default_value}
-#echo $default_test
-
-echo "args: "
-# shellcheck disable=SC2066
-for key in "${(@k)args}"; do
-    echo "$key=${args[$key]}"
-done
-
-# 以上为变量赋值区域，
-# 形如：default_test=${args[e]:-default_value}』
-# e: 为外部传入参数，如果没有将给「default_value」
+echo "VERSION=$VERSION"
 
 #
 #
